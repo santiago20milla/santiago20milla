@@ -12,7 +12,7 @@ CARDS = []
 COMMANDER = []
 MANA_TYPES = ['W','U','B','R','G']
 df = []
-## Commander deck only (1 commander and only 1 card included)
+
 class deck():
     def __init__(self, **kwargs):
         self.cards = kwargs.get("CARDS", CARDS)
@@ -41,7 +41,6 @@ class deck():
         if any('Legendary' in s for s in chosen_card.supertypes):
             self.commander.append(chosen_card)
             self.mana_types = chosen_card.color_identity
-            
         else:
             print('Card chosen not Legendary')
 
@@ -59,19 +58,20 @@ class deck():
         card_names = (list(dict.fromkeys(dup_card_names)))
 
         if len(card_names) > 1:
-            print('More than a single card found, please choose between:')
-            for card in card_names: 
-                print(card_names.index(card), card)
-            index = input()
-            chosen_card = found_cards[dup_card_names.index(card_names[int(index)])]
+          try:
+              match_card_index = [index for index, value in enumerate(dup_card_names) if value == name]
+          except ValueError:
+            pass
+          chosen_card = found_cards[match_card_index[0]]
         else:
-            chosen_card = found_cards[0]
-        
+          chosen_card = found_cards[0]
+            
         print('Card selected: {}'.format(chosen_card.name))
-
-        if set(chosen_card.color_identity).issubset(self.mana_types):
+        
+        if chosen_card.color_identity:
+          if set(chosen_card.color_identity).issubset(self.mana_types):
             self.cards.extend(chosen_card for i in range(num_repetitions))
-        else:
+          else:
             print('Card not matching commander colors. \nOverrun? (1/0)')
             overrun = input()
             if overrun == '1':
@@ -95,6 +95,7 @@ class deck():
                 self.cards.pop(i)
             except ValueError:
                 pass
+
 
     def create_dataframe(self):
         names = []
@@ -250,20 +251,31 @@ def study_type(df, type, colors=['W','U','B','R','G']):
         print('\nMost powerful creature: \t{} ({})'.format(type_df.Name[type_df.Power.idxmax()], type_df.Power.max()))
 
 def break_text(card_df, num_effects=1):
+    '''Analyse the cards effects frequency (WIP)'''
     card_text = card_df.Text.str.split(expand=False)
     type = card.Type
     
     if type in ['Instant', 'Sorcery']:
-        stop_words = ['return','destroy','exile','counter','draw','turn','look','discard','search','copy', 'control', 'put']
+        stop_words = ['return','destroy','exile','counter','draw',
+                      'turn','look','discard','search','copy','control','put']
     
     elif type in ['Artifact', 'Enchantment', 'Planeswalker']:
-        stop_words = ['hexproof','haste','look','draw','add','shroud','gets','deathtouch','search','gain','return','token','copy','flying','blocked','exile','tap','cast']
+        stop_words = ['hexproof','haste','look','draw','add','shroud','gets','deathtouch',
+                       'search','gain','return','token','copy','flying','blocked','exile','tap','cast']
     
     elif type == 'Creature':
-        stop_words = ['flying','ninjutsu','draw','return','blocked','search','destroy','copy','cast','exile','play','look','regenerate','greveyard','unblockable','exile','token',
-                    'discards','copy','deathtouch','hexproof','lifelink','counter','indestructible','flash','haste','gain','scry','shadow','untap']
-
+        stop_words = ['flying','ninjutsu','draw','return','blocked','search','destroy','copy','cast',
+                      'exile','play','look','regenerate','greveyard','unblockable','exile','token',
+                      'discards','copy','deathtouch','hexproof','lifelink','counter','indestructible',
+                      'flash','haste','gain','scry','shadow','untap']
 
 def save_deck(deck, filename):
     with open(filename, 'wb') as output:  # Overwrites any existing file.
         pickle.dump(deck, output, pickle.HIGHEST_PROTOCOL)
+        
+# TODO:
+## handle ortographic errors when cards are added
+## analyse effects of cards
+## group/connect cards accordign to their synergy
+
+
